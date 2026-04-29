@@ -1,6 +1,6 @@
 # SaaS Sprawl Audit
 
-A single-file dashboard that takes a SaaS inventory CSV and surfaces where IT spend is leaking, which tools to consolidate, and which renewals to negotiate hard. Built for IT Directors who don't have a discovery problem — they have a *which-five-things-to-cut-this-quarter* problem.
+A single-file dashboard that takes a SaaS inventory CSV and surfaces where IT spend is leaking, which tools to consolidate, and which renewals to negotiate hard. Built for IT Directors/Managers who don't have a discovery problem — they have a *which-five-things-to-cut-this-quarter* problem.
 
 **[Live demo →](#)** &nbsp;·&nbsp; **[Screenshots](#screenshots)** &nbsp;·&nbsp; **[Methodology](METHODOLOGY.md)**
 

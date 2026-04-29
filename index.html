@@ -485,9 +485,9 @@
 // ---------- COLUMN AUTO-DETECTION ----------
 const COLUMN_ALIASES = {
   app_name: ['app_name','app','application','tool','tool_name','vendor','product','software','saas','name','service'],
-  category: ['category','type','class','classification','segment'],
+  category: ['category','type','class','classification','segment','function'],
   annual_cost: ['annual_cost','annual_spend','cost','spend','price','amount','total_cost','yearly_cost','annual'],
-  seats_purchased: ['seats_purchased','licenses','seats','total_seats','total_licenses','licensed_users','provisioned','seats_total','license_count','users_provisioned'],
+  seats_purchased: ['seats_purchased','licenses','seats','total_seats','total_licenses','licensed_users','provisioned','seats_total','license_count','users_provisioned','seat_count','count'],
   seats_active_30d: ['seats_active_30d','active_seats','active_users','active_30d','last_30','mau','active','utilized'],
   renewal_date: ['renewal_date','renewal','renews','next_renewal','expires','expiration','contract_end'],
   owner: ['owner','dept','department','team','business_owner','cost_center']
@@ -498,8 +498,27 @@ function detectColumns(headers) {
   const normalized = headers.map(norm);
   const map = {};
   for (const [field, aliases] of Object.entries(COLUMN_ALIASES)) {
-    const idx = normalized.findIndex(h => aliases.includes(h));
-    if (idx !== -1) map[field] = idx;
+    // Sort aliases longest-first so multi-word matches win over single-word substrings
+    const sortedAliases = [...aliases].sort((a, b) => b.length - a.length);
+    let bestIdx = -1, bestScore = 0;
+    for (let i = 0; i < normalized.length; i++) {
+      const h = normalized[i];
+      const tokens = new Set(h.split('_'));
+      for (const alias of sortedAliases) {
+        // Exact match wins
+        if (h === alias) { bestIdx = i; bestScore = 100; break; }
+        // Multi-word alias appears as a contiguous token sequence
+        if (alias.includes('_') && h.includes(alias)) {
+          if (alias.length > bestScore) { bestIdx = i; bestScore = alias.length; }
+        }
+        // Single-word alias appears as a complete token in the header
+        else if (!alias.includes('_') && tokens.has(alias)) {
+          if (alias.length > bestScore) { bestIdx = i; bestScore = alias.length; }
+        }
+      }
+      if (bestScore === 100) break;
+    }
+    if (bestIdx !== -1) map[field] = bestIdx;
   }
   return map;
 }

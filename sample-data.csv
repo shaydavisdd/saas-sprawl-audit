@@ -1,0 +1,46 @@
+app_name,category,annual_cost,seats_purchased,seats_active_30d,renewal_date,owner
+Slack,Communication,87600,520,498,2026-08-15,IT
+Microsoft Teams,Communication,45000,520,245,2026-11-01,IT
+Zoom,Video Conferencing,62400,520,389,2026-09-22,IT
+Google Meet,Video Conferencing,0,520,180,2026-12-31,IT
+Webex,Video Conferencing,28800,80,18,2026-07-10,Sales
+Jira,Project Management,54000,300,278,2026-10-15,Engineering
+Asana,Project Management,32400,180,98,2026-06-30,Marketing
+Monday.com,Project Management,28800,120,41,2026-08-20,Operations
+Notion,Documentation,42000,500,412,2026-09-01,IT
+Confluence,Documentation,38400,300,198,2026-10-15,Engineering
+Coda,Documentation,14400,60,22,2026-07-22,Product
+GitHub,Developer Tools,72000,180,178,2026-11-30,Engineering
+GitLab,Developer Tools,21600,40,22,2026-08-05,Engineering
+Datadog,Observability,156000,120,118,2026-12-01,Engineering
+New Relic,Observability,84000,80,22,2026-09-15,Engineering
+Splunk,Observability,124000,60,51,2026-10-30,Security
+PagerDuty,Incident Management,42000,80,76,2026-11-15,Engineering
+Opsgenie,Incident Management,18000,40,8,2026-06-15,Engineering
+Salesforce,CRM,180000,120,114,2026-12-31,Sales
+HubSpot,CRM,96000,80,51,2026-09-01,Marketing
+Marketo,Marketing Automation,72000,40,35,2026-10-01,Marketing
+Mailchimp,Marketing Automation,18000,25,17,2026-08-15,Marketing
+Intercom,Customer Support,54000,60,52,2026-11-20,Support
+Zendesk,Customer Support,72000,90,68,2026-12-15,Support
+Freshdesk,Customer Support,21600,40,22,2026-06-01,Support
+Figma,Design,48000,200,184,2026-10-22,Design
+Adobe Creative Cloud,Design,84000,120,102,2026-09-15,Design
+Dropbox,File Storage,36000,520,287,2026-11-01,IT
+Box,File Storage,42000,520,198,2026-10-15,IT
+Google Workspace,File Storage,156000,520,520,2026-12-31,IT
+1Password,Security,31200,520,498,2026-09-30,IT
+LastPass,Security,18000,520,95,2026-07-15,IT
+Okta,Identity,156000,520,520,2026-11-30,IT
+Auth0,Identity,48000,40,22,2026-08-22,Engineering
+DocuSign,E-Signature,28800,150,98,2026-10-01,Legal
+Workday,HR,180000,520,510,2026-12-01,HR
+BambooHR,HR,42000,80,42,2026-08-15,HR
+Greenhouse,Recruiting,72000,40,38,2026-11-15,HR
+Lever,Recruiting,36000,30,14,2026-07-08,HR
+Tableau,Analytics,84000,60,56,2026-10-30,Data
+Looker,Analytics,96000,80,75,2026-11-22,Data
+Mode,Analytics,48000,40,18,2026-08-30,Data
+Calendly,Scheduling,18000,200,167,2026-09-15,Sales
+LinkedIn Sales Navigator,Sales Intelligence,36000,30,28,2026-10-15,Sales
+ZoomInfo,Sales Intelligence,84000,40,12,2026-08-01,Sales

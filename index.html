@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SaaS Sprawl Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --ink: #14110f;
+    --ink-soft: #4a4641;
+    --rule: #14110f;
+    --paper: #ebe6dc;
+    --recover: #2d6a4f;        /* green — money recovered, positive */
+    --recover-soft: #d4e4d8;
+    --waste: #c8410c;          /* red — waste, sunset, cuts */
+    --waste-soft: #e8d5c4;
+    --caution: #a87410;        /* amber — mid-priority, right-size */
+    --green: #2d5a3f;
+    --warn: #8b6914;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    line-height: 1.5;
+    padding: 0 0 80px;
+    overflow-x: hidden;
+  }
+  .grain {
+    position: fixed; inset: 0; pointer-events: none; z-index: 100;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .container { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
+
+  /* MASTHEAD */
+  .masthead {
+    border-bottom: 2px solid var(--rule);
+    padding: 24px 0 18px;
+    margin-bottom: 0;
+  }
+  .masthead-top {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+  }
+  .masthead h1 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: clamp(36px, 5vw, 56px);
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+  .masthead h1 .italic { font-weight: 400; color: var(--ink-soft); }
+  .masthead-sub {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-top: 16px; padding-top: 12px;
+    border-top: 1px solid var(--rule);
+  }
+  .masthead-sub .deck {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px; font-weight: 400;
+    max-width: 600px; color: var(--ink-soft); line-height: 1.5;
+  }
+  .upload-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--ink); color: var(--bg);
+    border: none; padding: 10px 18px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .upload-btn:hover { background: var(--ink-soft); }
+
+  /* HEADLINE */
+  .headline-section {
+    padding: 48px 0 56px;
+    border-bottom: 1px solid var(--rule);
+    display: grid; grid-template-columns: 2fr 1fr; gap: 48px;
+  }
+  .headline-money {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(64px, 9vw, 120px);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--recover);
+  }
+  .headline-money .currency {
+    font-size: 0.5em; vertical-align: top;
+    margin-right: 4px; font-weight: 400;
+  }
+  .headline-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-soft);
+    margin-top: 16px;
+    padding-top: 12px; border-top: 1px solid var(--rule);
+    max-width: 80%;
+  }
+  .headline-stats {
+    display: flex; flex-direction: column; justify-content: flex-end;
+    gap: 12px; padding-bottom: 8px;
+  }
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-bottom: 1px dotted var(--ink-soft);
+    padding: 8px 0;
+  }
+  .stat-row .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--ink-soft);
+  }
+  .stat-row .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px; font-weight: 500;
+  }
+
+  /* SECTION HEADERS */
+  .section { padding: 56px 0; border-bottom: 1px solid var(--rule); }
+  .section:last-child { border-bottom: none; }
+  .section-header {
+    display: grid; grid-template-columns: 1fr auto;
+    align-items: baseline; gap: 24px;
+    margin-bottom: 32px;
+  }
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    color: var(--ink-soft);
+    letter-spacing: 0.1em;
+  }
+  .section-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 28px; font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .section-title .italic { font-weight: 500; color: var(--ink-soft); }
+  .section-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--ink-soft);
+  }
+
+  /* PRIORITY ACTIONS */
+  .actions-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border-top: 2px solid var(--rule); }
+  .action-card {
+    border-right: 1px solid var(--rule);
+    padding: 24px 20px;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .action-card:last-child { border-right: none; }
+  .action-card:hover { background: var(--paper); }
+  .action-rank {
+    font-family: 'Inter', sans-serif;
+    font-size: 32px; font-weight: 600;
+    line-height: 1; color: var(--ink-soft); letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  .action-recovery {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px; font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--recover);
+  }
+  .action-recovery-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+  }
+  .action-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 600;
+    margin-bottom: 8px;
+    line-height: 1.35;
+  }
+  .action-desc {
+    font-size: 13px; color: var(--ink-soft);
+    line-height: 1.45; margin-bottom: 12px;
+  }
+  .effort-bar {
+    display: flex; gap: 4px; align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .effort-dots { display: flex; gap: 3px; }
+  .effort-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--paper); border: 1px solid var(--ink);
+  }
+  .effort-dot.filled { background: var(--ink); }
+
+  /* IDLE LICENSES TABLE */
+  .data-table {
+    width: 100%; border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+  .data-table thead {
+    border-top: 2px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .data-table th {
+    text-align: left; padding: 12px 8px;
+    font-weight: 500; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--ink-soft);
+  }
+  .data-table th:last-child, .data-table td:last-child { text-align: right; }
+  .data-table th.num, .data-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .data-table tbody tr {
+    border-bottom: 1px dotted var(--ink-soft);
+    transition: background 0.15s;
+  }
+  .data-table tbody tr:hover { background: var(--paper); }
+  .data-table td {
+    padding: 14px 8px;
+    vertical-align: middle;
+  }
+  .app-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 600;
+  }
+  .waste-bar-container {
+    width: 140px; height: 6px;
+    background: var(--paper);
+    position: relative;
+    display: inline-block;
+  }
+  .waste-bar { height: 100%; background: var(--waste); transition: width 0.6s; }
+  .waste-pct {
+    display: inline-block; min-width: 48px;
+    margin-left: 12px; font-weight: 500;
+  }
+  .recovery-amount {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; font-weight: 500;
+    color: var(--recover);
+  }
+
+  /* REDUNDANCY */
+  .redundancy-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px;
+  }
+  .redundancy-card {
+    border: 1px solid var(--rule);
+    padding: 28px;
+    background: var(--paper);
+    position: relative;
+  }
+  .redundancy-category {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+  }
+  .redundancy-headline {
+    font-family: 'Inter', sans-serif;
+    font-size: 18px; font-weight: 600;
+    line-height: 1.3; margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .redundancy-headline .italic { font-weight: 400; color: var(--ink-soft); }
+  .redundancy-summary {
+    font-size: 14px; color: var(--ink-soft);
+    margin-bottom: 20px; line-height: 1.5;
+  }
+  .redundancy-apps {
+    display: flex; flex-direction: column; gap: 8px;
+    border-top: 1px solid var(--ink);
+    padding-top: 16px;
+  }
+  .redundancy-app {
+    display: grid; grid-template-columns: 1fr auto auto auto;
+    gap: 16px; align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 6px 0;
+  }
+  .redundancy-app .name { font-weight: 500; }
+  .redundancy-app.candidate .name { color: var(--waste); text-decoration: line-through; }
+  .redundancy-app .util {
+    background: var(--ink); color: var(--bg);
+    padding: 2px 6px; font-size: 10px;
+  }
+  .redundancy-app.candidate .util { background: var(--waste); }
+  .redundancy-app .cost {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+  }
+  .redundancy-recommendation {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    margin-top: 16px; padding-top: 14px;
+    border-top: 1px dotted var(--ink-soft);
+    color: var(--ink);
+  }
+  .redundancy-recommendation strong {
+    color: var(--recover); font-style: normal; font-weight: 600;
+  }
+
+  /* RENEWAL QUEUE */
+  .renewal-list { display: flex; flex-direction: column; gap: 0; border-top: 2px solid var(--rule); }
+  .renewal-item {
+    display: grid;
+    grid-template-columns: 60px 1fr 120px 120px 1fr 100px;
+    gap: 24px; align-items: center;
+    padding: 20px 0;
+    border-bottom: 1px dotted var(--ink-soft);
+    transition: background 0.15s;
+  }
+  .renewal-item:hover { background: var(--paper); padding-left: 12px; padding-right: 12px; }
+  .renewal-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .renewal-date .month {
+    display: block; font-size: 10px; letter-spacing: 0.1em;
+  }
+  .renewal-date .day {
+    display: block; font-family: 'Inter', sans-serif;
+    font-size: 20px; font-weight: 700; color: var(--ink);
+    line-height: 1; margin: 2px 0;
+  }
+  .renewal-app {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 600;
+  }
+  .renewal-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--ink-soft);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .renewal-meta .num { font-size: 14px; color: var(--ink); font-weight: 500; display: block; }
+  .renewal-leverage {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.4;
+  }
+  .renewal-priority {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+    text-align: right; font-weight: 600;
+  }
+  .renewal-priority.high { color: var(--waste); }
+  .renewal-priority.med { color: var(--caution); }
+  .renewal-priority.low { color: var(--recover); }
+
+  /* FOOTER */
+  .footer {
+    margin-top: 80px; padding: 32px 0;
+    border-top: 2px solid var(--rule);
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--ink-soft);
+  }
+  .footer a { color: var(--recover); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .headline-section { grid-template-columns: 1fr; }
+    .actions-grid { grid-template-columns: 1fr 1fr; }
+    .action-card:nth-child(2n) { border-right: none; }
+    .action-card { border-bottom: 1px solid var(--rule); }
+    .redundancy-grid { grid-template-columns: 1fr; }
+    .renewal-item { grid-template-columns: 60px 1fr 100px; gap: 12px; }
+    .renewal-item .renewal-meta:nth-of-type(2), .renewal-leverage { display: none; }
+    .data-table { font-size: 11px; }
+    .data-table .hide-mobile { display: none; }
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate { animation: fadeUp 0.6s ease-out backwards; }
+
+  input[type="file"] { display: none; }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<div class="container">
+
+  <!-- MASTHEAD -->
+  <header class="masthead">
+    <div class="masthead-top">
+      <span>SaaS Sprawl Audit</span>
+      <span id="audit-date">—</span>
+    </div>
+    <h1>The Sprawl <span class="italic">Audit</span>.</h1>
+    <div class="masthead-sub">
+      <p class="deck">Where SaaS spend is leaking, which tools to kill, and what to negotiate before the next renewal.</p>
+      <label class="upload-btn" for="csv-upload">↑ Upload your CSV</label>
+      <input type="file" id="csv-upload" accept=".csv">
+    </div>
+  </header>
+
+  <!-- HEADLINE -->
+  <section class="headline-section animate" style="animation-delay: 0.1s">
+    <div>
+      <div class="headline-money">
+        <span class="currency">$</span><span id="recoverable">—</span>
+      </div>
+      <p class="headline-label" id="recoverable-label">
+        Recoverable annual spend identified across the portfolio
+      </p>
+    </div>
+    <div class="headline-stats">
+      <div class="stat-row"><span class="label">Total annual spend</span><span class="value" id="total-spend">—</span></div>
+      <div class="stat-row"><span class="label">Apps in portfolio</span><span class="value" id="app-count">—</span></div>
+      <div class="stat-row"><span class="label">Idle license waste</span><span class="value" id="idle-waste">—</span></div>
+      <div class="stat-row"><span class="label">Redundancy waste</span><span class="value" id="redundancy-waste">—</span></div>
+      <div class="stat-row"><span class="label">% Recoverable</span><span class="value" id="recoverable-pct">—</span></div>
+    </div>
+  </section>
+
+  <!-- PRIORITY ACTIONS -->
+  <section class="section animate" style="animation-delay: 0.2s">
+    <div class="section-header">
+      <h2 class="section-title">Top 5 <span class="italic">actions</span>, ranked by recovery × inverse effort.</h2>
+      <span class="section-meta">Director's queue</span>
+    </div>
+    <div class="actions-grid" id="actions-grid"></div>
+  </section>
+
+  <!-- IDLE LICENSES -->
+  <section class="section animate" style="animation-delay: 0.3s">
+    <div class="section-header">
+      <h2 class="section-title">Idle <span class="italic">licenses</span>.</h2>
+      <span class="section-meta">≥30% unused / 30-day window</span>
+    </div>
+    <table class="data-table" id="idle-table">
+      <thead>
+        <tr>
+          <th>Application</th>
+          <th class="hide-mobile">Owner</th>
+          <th class="num">Seats</th>
+          <th class="num hide-mobile">Active</th>
+          <th>Waste</th>
+          <th class="num">Recoverable</th>
+        </tr>
+      </thead>
+      <tbody id="idle-tbody"></tbody>
+    </table>
+  </section>
+
+  <!-- REDUNDANCY -->
+  <section class="section animate" style="animation-delay: 0.4s">
+    <div class="section-header">
+      <h2 class="section-title">Tooling <span class="italic">redundancy</span>.</h2>
+      <span class="section-meta">Consolidation candidates</span>
+    </div>
+    <div class="redundancy-grid" id="redundancy-grid"></div>
+  </section>
+
+  <!-- RENEWAL QUEUE -->
+  <section class="section animate" style="animation-delay: 0.5s">
+    <div class="section-header">
+      <h2 class="section-title">Renewal <span class="italic">queue</span>, sorted by negotiating leverage.</h2>
+      <span class="section-meta">Next 180 days</span>
+    </div>
+    <div class="renewal-list" id="renewal-list"></div>
+  </section>
+
+</div>
+
+<script>
+// ---------- COLUMN AUTO-DETECTION ----------
+const COLUMN_ALIASES = {
+  app_name: ['app_name','app','application','tool','tool_name','vendor','product','software','saas','name','service'],
+  category: ['category','type','class','classification','segment'],
+  annual_cost: ['annual_cost','annual_spend','cost','spend','price','amount','total_cost','yearly_cost','annual'],
+  seats_purchased: ['seats_purchased','licenses','seats','total_seats','total_licenses','licensed_users','provisioned','seats_total','license_count','users_provisioned'],
+  seats_active_30d: ['seats_active_30d','active_seats','active_users','active_30d','last_30','mau','active','utilized'],
+  renewal_date: ['renewal_date','renewal','renews','next_renewal','expires','expiration','contract_end'],
+  owner: ['owner','dept','department','team','business_owner','cost_center']
+};
+
+function detectColumns(headers) {
+  const norm = h => h.toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+  const normalized = headers.map(norm);
+  const map = {};
+  for (const [field, aliases] of Object.entries(COLUMN_ALIASES)) {
+    const idx = normalized.findIndex(h => aliases.includes(h));
+    if (idx !== -1) map[field] = idx;
+  }
+  return map;
+}
+
+function parseCost(v) {
+  if (v == null || v === '') return 0;
+  const s = String(v).replace(/[$,\s]/g,'').toLowerCase();
+  if (s.endsWith('k')) return parseFloat(s) * 1000;
+  if (s.endsWith('m')) return parseFloat(s) * 1000000;
+  return parseFloat(s) || 0;
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const parseRow = line => {
+    const out = []; let cur = ''; let q = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+      else if (c === '"') q = !q;
+      else if (c === ',' && !q) { out.push(cur); cur = ''; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out.map(s => s.trim());
+  };
+  const headers = parseRow(lines[0]);
+  const colMap = detectColumns(headers);
+  return lines.slice(1).map(line => {
+    const row = parseRow(line);
+    return {
+      app_name: row[colMap.app_name] || 'Unknown',
+      category: row[colMap.category] || 'Uncategorized',
+      annual_cost: parseCost(row[colMap.annual_cost]),
+      seats_purchased: parseInt(row[colMap.seats_purchased]) || 0,
+      seats_active_30d: parseInt(row[colMap.seats_active_30d]) || 0,
+      renewal_date: row[colMap.renewal_date] || '',
+      owner: row[colMap.owner] || '—'
+    };
+  }).filter(r => r.app_name !== 'Unknown' && r.annual_cost > 0);
+}
+
+// ---------- ANALYSIS ----------
+const IDLE_THRESHOLD = 0.30; // ≥30% unused = flagged
+
+function analyzeIdle(apps) {
+  return apps.map(a => {
+    const utilization = a.seats_purchased > 0 ? a.seats_active_30d / a.seats_purchased : 1;
+    const wastePct = 1 - utilization;
+    const costPerSeat = a.seats_purchased > 0 ? a.annual_cost / a.seats_purchased : 0;
+    const idleSeats = a.seats_purchased - a.seats_active_30d;
+    const recoverable = Math.round(idleSeats * costPerSeat);
+    return { ...a, utilization, wastePct, recoverable, idleSeats };
+  }).filter(a => a.wastePct >= IDLE_THRESHOLD && a.seats_purchased >= 10)
+    .sort((a, b) => b.recoverable - a.recoverable);
+}
+
+function analyzeRedundancy(apps) {
+  // Group by category, only return categories with 2+ apps
+  const groups = {};
+  apps.forEach(a => {
+    if (!groups[a.category]) groups[a.category] = [];
+    groups[a.category].push(a);
+  });
+  return Object.entries(groups)
+    .filter(([_, items]) => items.length >= 2)
+    .map(([category, items]) => {
+      const sorted = items.map(a => ({
+        ...a,
+        utilization: a.seats_purchased > 0 ? a.seats_active_30d / a.seats_purchased : 0
+      })).sort((a, b) => b.utilization - a.utilization);
+      // Keep highest-utilized; flag others where utilization < 50% as candidates
+      const winner = sorted[0];
+      const candidates = sorted.slice(1).filter(a => a.utilization < 0.5);
+      const consolidationSavings = candidates.reduce((sum, a) => sum + a.annual_cost, 0);
+      return { category, all: sorted, winner, candidates, consolidationSavings };
+    })
+    .filter(g => g.candidates.length > 0 && g.consolidationSavings > 0)
+    .sort((a, b) => b.consolidationSavings - a.consolidationSavings);
+}
+
+function buildPriorityActions(idle, redundancy) {
+  // First, build the set of apps already covered by sunset/consolidation —
+  // a sunset move dominates a right-size move on the same app.
+  const sunsetApps = new Set();
+  redundancy.forEach(g => g.candidates.forEach(c => sunsetApps.add(c.app_name)));
+
+  const actions = [];
+
+  // Consolidation actions (one per redundancy group)
+  redundancy.slice(0, 6).forEach(g => {
+    const cands = g.candidates.map(c => c.app_name).join(' + ');
+    actions.push({
+      type: 'Consolidate',
+      title: `Sunset ${cands}`,
+      desc: `${g.category}: migrate users to ${g.winner.app_name} (${Math.round(g.winner.utilization*100)}% utilized). Run 90-day migration.`,
+      recovery: g.consolidationSavings,
+      effort: g.candidates.length > 1 ? 4 : 3
+    });
+  });
+
+  // Right-size actions ONLY for apps not already being sunset
+  idle.filter(a => !sunsetApps.has(a.app_name)).slice(0, 8).forEach(a => {
+    const effort = a.idleSeats > 200 ? 2 : 1;
+    actions.push({
+      type: 'Right-size',
+      title: `Cut ${a.idleSeats} idle ${a.app_name} seats`,
+      desc: `${Math.round(a.wastePct * 100)}% of seats unused in last 30 days. Negotiate seat reduction at next renewal or true-up.`,
+      recovery: a.recoverable,
+      effort
+    });
+  });
+
+  // Score: recovery / effort, take top 5
+  return actions
+    .map(a => ({ ...a, score: a.recovery / a.effort }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+}
+
+function analyzeRenewals(apps) {
+  const today = new Date();
+  const horizon = new Date(today.getTime() + 180 * 24 * 60 * 60 * 1000);
+  return apps.map(a => {
+    const date = new Date(a.renewal_date);
+    if (isNaN(date)) return null;
+    if (date < today || date > horizon) return null;
+    const utilization = a.seats_purchased > 0 ? a.seats_active_30d / a.seats_purchased : 1;
+    const wastePct = 1 - utilization;
+    const idleSeats = a.seats_purchased - a.seats_active_30d;
+    const costPerSeat = a.seats_purchased > 0 ? a.annual_cost / a.seats_purchased : 0;
+    const leverage = idleSeats * costPerSeat;
+    return { ...a, date, utilization, wastePct, leverage };
+  }).filter(Boolean)
+    .sort((a, b) => b.leverage - a.leverage);
+}
+
+// ---------- RENDERING ----------
+const fmt$ = n => '$' + Math.round(n).toLocaleString();
+const fmt$short = n => {
+  if (n >= 1000000) return '$' + (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return '$' + Math.round(n/1000) + 'K';
+  return '$' + Math.round(n);
+};
+
+function render(apps) {
+  if (!apps.length) return;
+
+  document.getElementById('audit-date').textContent =
+    new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  const idle = analyzeIdle(apps);
+  const redundancy = analyzeRedundancy(apps);
+  const actions = buildPriorityActions(idle, redundancy);
+  const renewals = analyzeRenewals(apps);
+
+  const totalSpend = apps.reduce((s,a) => s + a.annual_cost, 0);
+  const idleWaste = idle.reduce((s,a) => s + a.recoverable, 0);
+  const redundancyWaste = redundancy.reduce((s,g) => s + g.consolidationSavings, 0);
+  const recoverable = idleWaste + redundancyWaste;
+
+  // Headline
+  document.getElementById('recoverable').textContent =
+    Math.round(recoverable).toLocaleString();
+  document.getElementById('recoverable-label').textContent =
+    `Recoverable annual spend across ${apps.length} apps in portfolio.`;
+  document.getElementById('total-spend').textContent = fmt$short(totalSpend);
+  document.getElementById('app-count').textContent = apps.length;
+  document.getElementById('idle-waste').textContent = fmt$short(idleWaste);
+  document.getElementById('redundancy-waste').textContent = fmt$short(redundancyWaste);
+  document.getElementById('recoverable-pct').textContent = Math.round(recoverable/totalSpend*100) + '%';
+
+  // Priority actions
+  const actionsGrid = document.getElementById('actions-grid');
+  actionsGrid.innerHTML = actions.map((a, i) => `
+    <div class="action-card">
+      <div class="action-rank">${String(i+1).padStart(2,'0')}</div>
+      <div class="action-recovery">${fmt$short(a.recovery)}</div>
+      <div class="action-recovery-label">Recovery</div>
+      <div class="action-title">${a.title}</div>
+      <div class="action-desc">${a.desc}</div>
+      <div class="effort-bar">
+        <span>Effort</span>
+        <span class="effort-dots">
+          ${[1,2,3,4,5].map(n => `<span class="effort-dot ${n <= a.effort ? 'filled' : ''}"></span>`).join('')}
+        </span>
+      </div>
+    </div>
+  `).join('');
+
+  // Idle licenses table
+  document.getElementById('idle-tbody').innerHTML = idle.slice(0, 12).map(a => `
+    <tr>
+      <td><span class="app-name">${a.app_name}</span></td>
+      <td class="hide-mobile">${a.owner}</td>
+      <td class="num">${a.seats_purchased}</td>
+      <td class="num hide-mobile">${a.seats_active_30d}</td>
+      <td>
+        <div class="waste-bar-container">
+          <div class="waste-bar" style="width: ${Math.round(a.wastePct*100)}%"></div>
+        </div>
+        <span class="waste-pct">${Math.round(a.wastePct*100)}%</span>
+      </td>
+      <td class="num"><span class="recovery-amount">${fmt$short(a.recoverable)}</span></td>
+    </tr>
+  `).join('');
+
+  // Redundancy
+  document.getElementById('redundancy-grid').innerHTML = redundancy.slice(0, 6).map(g => `
+    <div class="redundancy-card">
+      <div class="redundancy-category">${g.category}</div>
+      <div class="redundancy-headline">${g.all.length} tools, <span class="italic">one job</span>.</div>
+      <div class="redundancy-apps">
+        <div class="redundancy-app">
+          <span class="name">${g.winner.app_name}</span>
+          <span class="util">${Math.round(g.winner.utilization*100)}% used</span>
+          <span class="cost">KEEP</span>
+          <span class="cost">${fmt$short(g.winner.annual_cost)}</span>
+        </div>
+        ${g.candidates.map(c => `
+          <div class="redundancy-app candidate">
+            <span class="name">${c.app_name}</span>
+            <span class="util">${Math.round(c.utilization*100)}% used</span>
+            <span class="cost">SUNSET</span>
+            <span class="cost">${fmt$short(c.annual_cost)}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="redundancy-recommendation">
+        Migrate to ${g.winner.app_name}, recover <strong>${fmt$short(g.consolidationSavings)}</strong> annually.
+      </div>
+    </div>
+  `).join('');
+
+  // Renewal queue
+  document.getElementById('renewal-list').innerHTML = renewals.slice(0, 10).map(r => {
+    const monthName = r.date.toLocaleDateString('en-US',{month:'short'});
+    const day = r.date.getDate();
+    const daysUntil = Math.ceil((r.date - new Date()) / (1000*60*60*24));
+    const priority = r.wastePct >= 0.5 ? 'high' : r.wastePct >= 0.25 ? 'med' : 'low';
+    const priorityLabel = priority === 'high' ? 'Negotiate hard' : priority === 'med' ? 'Right-size' : 'Standard';
+    const leverageText = r.wastePct >= 0.5
+      ? `${Math.round(r.wastePct*100)}% idle — strong leverage to cut seats or walk.`
+      : r.wastePct >= 0.25
+      ? `${Math.round(r.wastePct*100)}% idle — push for seat reduction.`
+      : `Healthy utilization — renew at terms.`;
+    return `
+      <div class="renewal-item">
+        <div class="renewal-date">
+          <span class="month">${monthName}</span>
+          <span class="day">${day}</span>
+          <span>${daysUntil}d</span>
+        </div>
+        <div class="renewal-app">${r.app_name}</div>
+        <div class="renewal-meta"><span class="num">${fmt$short(r.annual_cost)}</span>Annual</div>
+        <div class="renewal-meta"><span class="num">${Math.round(r.utilization*100)}%</span>Utilized</div>
+        <div class="renewal-leverage">${leverageText}</div>
+        <div class="renewal-priority ${priority}">${priorityLabel}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ---------- BOOT ----------
+const SAMPLE_CSV = `app_name,category,annual_cost,seats_purchased,seats_active_30d,renewal_date,owner
+Slack,Communication,87600,520,498,2026-08-15,IT
+Microsoft Teams,Communication,45000,520,245,2026-11-01,IT
+Zoom,Video Conferencing,62400,520,389,2026-09-22,IT
+Google Meet,Video Conferencing,0,520,180,2026-12-31,IT
+Webex,Video Conferencing,28800,80,18,2026-07-10,Sales
+Jira,Project Management,54000,300,278,2026-10-15,Engineering
+Asana,Project Management,32400,180,98,2026-06-30,Marketing
+Monday.com,Project Management,28800,120,41,2026-08-20,Operations
+Notion,Documentation,42000,500,412,2026-09-01,IT
+Confluence,Documentation,38400,300,198,2026-10-15,Engineering
+Coda,Documentation,14400,60,22,2026-07-22,Product
+GitHub,Developer Tools,72000,180,178,2026-11-30,Engineering
+GitLab,Developer Tools,21600,40,22,2026-08-05,Engineering
+Datadog,Observability,156000,120,118,2026-12-01,Engineering
+New Relic,Observability,84000,80,22,2026-09-15,Engineering
+Splunk,Observability,124000,60,51,2026-10-30,Security
+PagerDuty,Incident Management,42000,80,76,2026-11-15,Engineering
+Opsgenie,Incident Management,18000,40,8,2026-06-15,Engineering
+Salesforce,CRM,180000,120,114,2026-12-31,Sales
+HubSpot,CRM,96000,80,51,2026-09-01,Marketing
+Marketo,Marketing Automation,72000,40,35,2026-10-01,Marketing
+Mailchimp,Marketing Automation,18000,25,17,2026-08-15,Marketing
+Intercom,Customer Support,54000,60,52,2026-11-20,Support
+Zendesk,Customer Support,72000,90,68,2026-12-15,Support
+Freshdesk,Customer Support,21600,40,22,2026-06-01,Support
+Figma,Design,48000,200,184,2026-10-22,Design
+Adobe Creative Cloud,Design,84000,120,102,2026-09-15,Design
+Dropbox,File Storage,36000,520,287,2026-11-01,IT
+Box,File Storage,42000,520,198,2026-10-15,IT
+Google Workspace,File Storage,156000,520,520,2026-12-31,IT
+1Password,Security,31200,520,498,2026-09-30,IT
+LastPass,Security,18000,520,95,2026-07-15,IT
+Okta,Identity,156000,520,520,2026-11-30,IT
+Auth0,Identity,48000,40,22,2026-08-22,Engineering
+DocuSign,E-Signature,28800,150,98,2026-10-01,Legal
+Workday,HR,180000,520,510,2026-12-01,HR
+BambooHR,HR,42000,80,42,2026-08-15,HR
+Greenhouse,Recruiting,72000,40,38,2026-11-15,HR
+Lever,Recruiting,36000,30,14,2026-07-08,HR
+Tableau,Analytics,84000,60,56,2026-10-30,Data
+Looker,Analytics,96000,80,75,2026-11-22,Data
+Mode,Analytics,48000,40,18,2026-08-30,Data
+Calendly,Scheduling,18000,200,167,2026-09-15,Sales
+LinkedIn Sales Navigator,Sales Intelligence,36000,30,28,2026-10-15,Sales
+ZoomInfo,Sales Intelligence,84000,40,12,2026-08-01,Sales`;
+
+render(parseCSV(SAMPLE_CSV));
+
+document.getElementById('csv-upload').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const apps = parseCSV(ev.target.result);
+      if (apps.length === 0) { alert('No valid rows detected. Check that your CSV has app name, cost, and seat columns.'); return; }
+      render(apps);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      alert('CSV parse error: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+});
+</script>
+</body>
+</html>
